@@ -1,0 +1,216 @@
+---
+title: "Enrichment analysis"
+author: "Gema Castillo García"
+date: "20/05/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_knit$set(root.dir = 'C:/Users/Acerolo/Desktop/GitHub/TFM')
+knitr::opts_knit$set(root.dir = 'C:/Users/gemac/OneDrive - Fundación Universitaria San Pablo CEU/UPM/Máster/Semestre II/TFM/scripts GitHub')
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+library(clusterProfiler)
+library(org.At.tair.db)
+library(biomartr) #
+library(enrichplot)
+library(ggplot2)
+library(pathview)
+
+keytypes(org.At.tair.db) #checking ID types supported by org.At.tair.db (TAIR is accepted)
+```
+
+A gene set is an unordered collection of genes that are functionally related.
+
+
+# Gene Ontology (GO)
+
+GO comprises three ontologies: molecular function (MF), biological process (BP), and cellular component (CC). In this case, I am interested on the second one (pathways and larger processes made up of the activities of multiple gene products).
+
+
+
+# wt_ABA vs wt_ctr #
+
+Some of the following functions require a ranked gene list, which contains three features:
+
+    numeric vector: fold change (FC) or other type of numerical variable
+    named vector: every FC has the corresponding gene ID
+    sorted vector: FCs should be sorted in decreasing order
+    
+```{r}
+# Create a df with UP-regulated genes in wt_aba_vs_wt_ctr and their FC
+aba_wt_UP_DE_list = edgeR_results_ABA$list_by_contrast$wt_aba_vs_wt_ctr %>% filter(logFC_wt_aba_vs_wt_ctr > 1 & FDR_wt_aba_vs_wt_ctr < 0.05)
+row.names(aba_wt_UP_DE_list) = aba_wt_UP_DE_list$Geneid
+
+#Creating a geneList with -log10(FC) values of genes with FDR < 0.05
+  ## feature 1: numeric vector
+  aba_wt_UP_geneList_FC = aba_wt_UP_DE_list$logFC_wt_aba_vs_wt_ctr
+  
+  ## feature 2: named vector
+  names(aba_wt_UP_geneList_FC) = as.character(row.names(aba_wt_UP_DE_list))
+  
+  ## feature 3: sorted vector
+  aba_wt_UP_geneList_FC = sort(aba_wt_UP_geneList_FC, decreasing = TRUE)
+  
+  
+  
+  
+# Create a df with DOWN-regulated genes in wt_aba_vs_wt_ctr
+aba_wt_DN_DE_list = edgeR_results_ABA$list_by_contrast$wt_aba_vs_wt_ctr %>% filter(logFC_wt_aba_vs_wt_ctr < 1 & FDR_wt_aba_vs_wt_ctr < 0.05)
+row.names(aba_wt_DN_DE_list) = aba_wt_DN_DE_list$Geneid
+
+#Creating a geneList with -log10(FC) values of genes with FDR < 0.05
+  ## feature 1: numeric vector
+  aba_wt_DN_geneList_FC = aba_wt_DN_DE_list$logFC_wt_aba_vs_wt_ctr
+  
+  ## feature 2: named vector
+  names(aba_wt_DN_geneList_FC) = as.character(row.names(aba_wt_DN_DE_list))
+  
+  ## feature 3: sorted vector
+  aba_wt_DN_geneList_FC = sort(aba_wt_DN_geneList_FC, decreasing = TRUE)
+```
+
+
+
+### GO over-representation analysis of UP-rgeulated ABA-responsive genes in wt
+```{r}
+# Test which biological processes (BP) are over-represented in UP DE wt_aba_vs_wt_ctr
+
+aba_wt_UP_DE_enrichedGO_250max = enrichGO(gene          = names(aba_wt_UP_geneList_FC),
+                                          OrgDb         = org.At.tair.db,
+                                          keyType       = "TAIR",
+                                          ont           = "BP",
+                                          minGSSize     = 10,
+                                          maxGSSize     = 250,
+                                          pAdjustMethod = "BH",
+                                          pvalueCutoff  = 0.05,
+                                          qvalueCutoff  = 1,
+                                          readable      = TRUE) #%>% simplify()
+
+aba_wt_UP_DE_enrichedGO_500max = enrichGO(gene          = names(aba_wt_UP_geneList_FC),
+                                          OrgDb         = org.At.tair.db,
+                                          keyType       = "TAIR",
+                                          ont           = "BP",
+                                          minGSSize     = 10,
+                                          maxGSSize     = 500,
+                                          pAdjustMethod = "BH",
+                                          pvalueCutoff  = 0.05,
+                                          qvalueCutoff  = 1,
+                                          readable      = TRUE) #%>% simplify()
+
+aba_wt_UP_DE_enrichedGO_1000max = enrichGO(gene          = names(aba_wt_UP_geneList_FC),
+                                           OrgDb         = org.At.tair.db,
+                                           keyType       = "TAIR",
+                                           ont           = "BP",
+                                           minGSSize     = 10,
+                                           maxGSSize     = 1000,
+                                           pAdjustMethod = "BH",
+                                           pvalueCutoff  = 0.05,
+                                           qvalueCutoff  = 1,
+                                           readable      = TRUE) #%>% simplify()
+
+aba_wt_UP_DE_enrichedGO_Infmax = enrichGO(gene          = names(aba_wt_UP_geneList_FC),
+                                          OrgDb         = org.At.tair.db,
+                                          keyType       = "TAIR",
+                                          ont           = "BP",
+                                          minGSSize     = 10,
+                                          maxGSSize     = Inf,
+                                          pAdjustMethod = "BH",
+                                          pvalueCutoff  = 0.05,
+                                          qvalueCutoff  = 1,
+                                          readable      = TRUE) #%>% simplify()
+
+# Save filtered GO terms in a table
+aba_wt_UP_DE_enrichedGO_Infmax@result %>% filter(p.adjust<0.05) %>% write.table(.,
+            file = "./R_output/GO_terms_enrichment_analysis/aba_wt_UP_DE_list_GO_terms.txt",
+            row.names = F, sep = "\t", quote = F, na = "")
+
+```
+
+### Visualization of enriched GO terms
+```{r}
+aba_wt_UP_cnetplot_250maxGSS = cnetplot(aba_wt_UP_DE_enrichedGO_250max, categorySize="p.adjust",
+                                   foldChange=aba_wt_UP_geneList_FC) # category netplot with FC values
+aba_wt_UP_cnetplot_500maxGSS = cnetplot(aba_wt_UP_DE_enrichedGO_500max, categorySize="p.adjust",
+                                   foldChange=aba_wt_UP_geneList_FC) # category netplot with FC values
+aba_wt_UP_cnetplot_1000maxGSS = cnetplot(aba_wt_UP_DE_enrichedGO_1000max, categorySize="p.adjust", 
+                                    foldChange=aba_wt_UP_geneList_FC) # category netplot with FC values
+
+# Saving Gene-Concept Networks
+png("./R_output/GO_terms_enrichment_analysis/aba_wt_UP_DE_Gene-Concept_Net_250maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+aba_wt_UP_cnetplot_250maxGSS
+
+png("./R_output/GO_terms_enrichment_analysis/aba_wt_UP_DE_Gene-Concept_Net_500maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+aba_wt_UP_cnetplot_500maxGSS
+dev.off()
+
+png("./R_output/GO_terms_enrichment_analysis/aba_wt_UP_DE_Gene-Concept_Net_1000maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+aba_wt_UP_cnetplot_1000maxGSS
+dev.off()
+```
+
+
+### GO over-representation analysis of DOWN-rgeulated ABA-responsive genes in wt
+```{r}
+# Test which biological processes (BP) are over-represented in DN DE wt_aba_vs_wt_ctr
+
+aba_wt_DN_DE_enrichedGO_500max = enrichGO(gene          = names(aba_wt_DN_geneList_FC),
+                                          OrgDb         = org.At.tair.db,
+                                          keyType       = "TAIR",
+                                          ont           = "BP",
+                                          minGSSize     = 10,
+                                          maxGSSize     = 500,
+                                          pAdjustMethod = "BH",
+                                          pvalueCutoff  = 0.05,
+                                          qvalueCutoff  = 1,
+                                          readable      = TRUE) #%>% simplify()
+
+aba_wt_DN_DE_enrichedGO_1000max = enrichGO(gene          = names(aba_wt_DN_geneList_FC),
+                                          OrgDb         = org.At.tair.db,
+                                          keyType       = "TAIR",
+                                          ont           = "BP",
+                                          minGSSize     = 10,
+                                          maxGSSize     = 1000,
+                                          pAdjustMethod = "BH",
+                                          pvalueCutoff  = 0.05,
+                                          qvalueCutoff  = 1,
+                                          readable      = TRUE) #%>% simplify()
+
+
+
+aba_wt_DN_DE_enrichedGO_Infmax = enrichGO(gene          = names(aba_wt_DN_geneList_FC),
+                                          OrgDb         = org.At.tair.db,
+                                          keyType       = "TAIR",
+                                          ont           = "BP",
+                                          minGSSize     = 10,
+                                          maxGSSize     = Inf,
+                                          pAdjustMethod = "BH",
+                                          pvalueCutoff  = 0.05,
+                                          qvalueCutoff  = 1,
+                                          readable      = TRUE) #%>% simplify()
+
+# Save filtered GO terms in a table
+aba_wt_DN_DE_enrichedGO_Infmax@result %>% filter(p.adjust<0.05) %>% write.table(.,
+            file = "./R_output/GO_terms_enrichment_analysis/aba_wt_DN_DE_list_GO_terms.txt",
+            row.names = F, sep = "\t", quote = F, na = "")
+
+```
+
+### Visualization of enriched GO terms
+```{r}
+aba_wt_DN_cnetplot_500maxGSS = cnetplot(aba_wt_DN_DE_enrichedGO_500max, categorySize="p.adjust",
+                                   foldChange=aba_wt_DN_geneList_FC) # category netplot with FC values
+aba_wt_DN_cnetplot_1000maxGSS = cnetplot(aba_wt_DN_DE_enrichedGO_1000max, categorySize="p.adjust", 
+                                    foldChange=aba_wt_DN_geneList_FC) # category netplot with FC values
+
+# Saving Gene-Concept Networks
+png("./R_output/GO_terms_enrichment_analysis/aba_wt_DN_DE_Gene-Concept_Net_500maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+aba_wt_DN_cnetplot_500maxGSS
+dev.off()
+
+png("./R_output/GO_terms_enrichment_analysis/aba_wt_DN_DE_Gene-Concept_Net_1000maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+aba_wt_DN_cnetplot_1000maxGSS
+dev.off()
+```

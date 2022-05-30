@@ -1,0 +1,379 @@
+---
+title: "qRT-PCR analysis"
+author: "Gema Castillo García"
+date: "23/5/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = 'C:/Users/gemac/OneDrive - Fundación Universitaria San Pablo CEU/UPM/Máster/Semestre II/TFM/TFM/qPCRs')
+```
+
+```{r libraries, message=FALSE, warning=FALSE, include=FALSE}
+library(ggplot2)
+library(ggpubr)
+library(tidyverse)
+library(broom)
+library(AICcmodavg)
+```
+
+```{r}
+# Setting global ggplot theme parameters
+theme_update(axis.text.x = element_text(color = "black"), 
+             axis.text.y = element_text(color = "black"),
+             axis.ticks = element_line(color = "black"),
+             panel.border = element_rect(color="black", fill = NA),
+             panel.grid.major = element_blank(), 
+             panel.grid.minor = element_blank(),
+             panel.background = element_blank(),
+             legend.background = element_blank(),
+             plot.background = element_rect(fill = "transparent", color = NA))
+
+```
+
+
+```{r}
+# Creating a function for plotting results
+plot_qPCR = function(data, title = NULL) {
+  
+  # Plot the mean values as bars with the values for each biological replicate as points
+  ggplot2::ggplot(data, aes(x = target_name, y = mean_rel_conc, fill = treatment, group = treatment)) +
+    geom_col(position ="dodge") +
+    geom_point(aes(y = rel_conc), position = position_dodge(width = 0.9), alpha = 0.3) +
+    scale_y_continuous("Relative mRNA levels") +
+    scale_fill_manual("", values = c("Mock" = "gray", "SL" = "#4472C4")) +
+    scale_x_discrete("") +
+    ggtitle(title) +
+    theme_classic(base_size = 12)
+  
+}
+```
+
+
+# SL treatment
+## AtBRC1 expression under SL treatment
+```{r}
+SL_Col0_data = cbind(target_name = rep("BRC1", 6), 
+                     treatment = (c(rep("SL", 3), rep("Mock", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(7.342285868, 9.550467565, 7.230791783, 0.942446997, 0.939508987, 1.12938529))) %>% 
+  group_by(treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+
+plot_qPCR(SL_Col0_data, "BRC1 expression under SL treatment")
+ggplot2::ggsave(plot_qPCR(SL_Col0_data, "BRC1 expression under SL treatment"), 
+                filename = "./BRC1 expression after 8h SL treatment.png",
+                dpi = 600,
+                units = "cm",
+                width = 10, height = 10)
+
+# One-way ANOVA
+SL_Col0_data$target_name = factor(SL_Col0_data$target_name)
+SL_Col0_data$treatment = factor(SL_Col0_data$treatment)
+
+aov(rel_conc ~ treatment, data = SL_Col0_data) %>% summary()
+aov(rel_conc ~ treatment, data = SL_Col0_data) %>% TukeyHSD
+```
+
+
+## SlBRC1a expression under SL treatment
+```{r}
+SL_BRC1a_data = cbind(target_name = rep("SlBRC1a", 6), 
+                      treatment = (c(rep("SL", 3), rep("Mock", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(0.449056078, 0.719225831, 0.525568456, 0.795254004, 1.012296677, 1.242185126))) %>% 
+  group_by(treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+
+plot_qPCR(SL_BRC1a_data, "SlBRC1a expression under SL treatment")
+
+# One-way ANOVA
+SL_BRC1a_data$target_name = factor(SL_BRC1a_data$target_name)
+SL_BRC1a_data$treatment = factor(SL_BRC1a_data$treatment)
+
+aov(rel_conc ~ treatment, data = SL_BRC1a_data) %>% summary()
+aov(rel_conc ~ treatment, data = SL_BRC1a_data) %>% TukeyHSD
+```
+
+
+## SlBRC1b expression under SL treatment
+```{r}
+SL_BRC1b_data = cbind(target_name = rep("SlBRC1b", 6), 
+                      treatment = (c(rep("SL", 3), rep("Mock", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(1.000196274, 0.771181649, 1.287180587, 1.03195394, 1.177919734, 0.822666833))) %>% 
+  group_by(treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+
+plot_qPCR(SL_BRC1b_data, "SlBRC1b expression under SL treatment")
+
+# One-way ANOVA
+SL_BRC1b_data$target_name = factor(SL_BRC1b_data$target_name)
+SL_BRC1b_data$treatment = factor(SL_BRC1b_data$treatment)
+
+aov(rel_conc ~ treatment, data = SL_BRC1b_data) %>% summary()
+aov(rel_conc ~ treatment, data = SL_BRC1b_data) %>% TukeyHSD
+```
+
+## SlCCD8 expression under SL treatment
+```{r}
+SL_CCD8_data = cbind(target_name = rep("SlCCD8", 6), 
+                      treatment = (c(rep("SL", 3), rep("Mock", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(0.861223405, 0.530291067, 0.421407145, 0.770943506, 1.098967537, 1.180300475))) %>% 
+  group_by(treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+
+plot_qPCR(SL_CCD8_data, "SlCCD8 expression under SL treatment")
+
+# One-way ANOVA
+SL_CCD8_data$target_name = factor(SL_CCD8_data$target_name)
+SL_CCD8_data$treatment = factor(SL_CCD8_data$treatment)
+
+aov(rel_conc ~ treatment, data = SL_CCD8_data) %>% summary()
+aov(rel_conc ~ treatment, data = SL_CCD8_data) %>% TukeyHSD
+```
+
+```{r}
+ggpubr::ggarrange(plotlist = list(plot_qPCR(SL_BRC1a_data, "SlBRC1a expression under SL treatment"),
+                                  plot_qPCR(SL_BRC1b_data, "SlBRC1b expression under SL treatment"),
+                                  plot_qPCR(SL_CCD8_data, "SlCCD8 expression under SL treatment")), ncol = 3) %>%
+  ggplot2::ggsave(., 
+                  filename = "./Tomato BRC1ab expression after 8h SL treatment.png",
+                  dpi = 600,
+                  units = "cm",
+                  width = 30, height = 10)
+```
+
+
+
+
+# Estradiol induction
+
+## HB21ind mRNA levels
+```{r}
+HB21ind_data = cbind(ind_line = c(rep("GUSind", 6), rep("HB21ind", 6), rep("HB40ind", 6), rep("HB53ind", 6)), 
+                     treatment = (c(rep("Mock", 3), rep("Estradiol", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(0.792624721, 1.696086642, 0.511288637, 0.819155852, 7.011435606, 0.706964594,
+                                0.901459837, 1.139053193, 0.959486971, 3327.758724, 2832.450682, 3572.789301,
+                                1.838755629, 0.844535374, 0.316708997, 2.600393148, 2.524906139, 1.916839786, 
+                                0.35716137, 0.342018899, 2.300819731, 1.481591732, 1.71373965, 1.382373966))) %>% 
+  group_by(ind_line, treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+
+
+
+# Plot the mean values as bars with the values for each biological replicate as points
+HB21ind_bar_plot = ggplot(HB21ind_data, aes(x = ind_line, y = mean_rel_conc, fill = treatment, group = treatment)) +
+                    geom_col(position ="dodge") +
+                    geom_point(aes(y = rel_conc), position = position_dodge(width = 0.9), alpha = 0.3) +
+                    scale_y_continuous("Relative mRNA levels") +
+                    scale_fill_manual("", values = c("Mock" = "gray", "Estradiol" = "#4472C4")) +
+                    scale_x_discrete("") +
+                    ggtitle("HB21 expression of estradiol-inducible lines") +
+                    theme_classic(base_size = 12)
+
+  
+  
+# One-way ANOVA
+HB21ind_data$ind_line = factor(HB21ind_data$ind_line)
+HB21ind_data$treatment = factor(HB21ind_data$treatment)
+
+aov(rel_conc ~ ind_line, data = HB21ind_data) %>% summary()
+aov(rel_conc ~ ind_line, data = HB21ind_data) %>% TukeyHSD
+```
+
+## HB40ind mRNA levels
+```{r}
+HB40ind_data = cbind(ind_line = c(rep("GUSind", 6), rep("HB21ind", 6), rep("HB40ind", 6), rep("HB53ind", 6)), 
+                     treatment = (c(rep("Mock", 3), rep("Estradiol", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(1.144072639, 1.339485212, 0.516442149, 0.705480765, 3.516593689, 0.689765872,
+                                0.508688712, 0.638321429, 1.852989859, 0.837902908, 0.824936505, 1.363538075,
+                                1.411555919, 1.117121638, 0.471322442, 233.5012209, 188.6785074, 283.5159879,
+                                0.571529432, 0.644119243, 1.784351325, 0.838219331, 0.952901963, 0.917258134))) %>% 
+  group_by(ind_line, treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+
+
+
+# Plot the mean values as bars with the values for each biological replicate as points
+HB40ind_bar_plot = ggplot(HB40ind_data, aes(x = ind_line, y = mean_rel_conc, fill = treatment, group = treatment)) +
+                    geom_col(position ="dodge") +
+                    geom_point(aes(y = rel_conc), position = position_dodge(width = 0.9), alpha = 0.3) +
+                    scale_y_continuous("Relative mRNA levels") +
+                    scale_fill_manual("", values = c("Mock" = "gray", "Estradiol" = "#4472C4")) +
+                    scale_x_discrete("") +
+                    ggtitle("HB40 expression of estradiol-inducible lines") +
+                    theme_classic(base_size = 12)
+
+  
+  
+# One-way ANOVA
+HB40ind_data$ind_line = factor(HB40ind_data$ind_line)
+HB40ind_data$treatment = factor(HB40ind_data$treatment)
+
+aov(rel_conc ~ ind_line, data = HB40ind_data) %>% summary()
+aov(rel_conc ~ ind_line, data = HB40ind_data) %>% TukeyHSD
+```
+
+## HB53ind mRNA levels
+```{r}
+HB53ind_data = cbind(ind_line = c(rep("GUSind", 6), rep("HB21ind", 6), rep("HB40ind", 6), rep("HB53ind", 6)), 
+                     treatment = (c(rep("Mock", 3), rep("Estradiol", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(1.221858609, 1.330139307, 0.448002084, 0.727781533, 8.334394261, 0.426044889,
+                                0.344627157, 0.288293117, 2.367079726, 0.649818309, 0.488221691, 1.822107779,
+                                1.685924649, 1.145549705, 0.168525646, 0.206403603, 0.807223488, 0.598133762,
+                                0.350447646, 0.521150094, 2.12840226, 212.2720835, 163.6841525, 147.5204182))) %>% 
+  group_by(ind_line, treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+
+
+
+# Plot the mean values as bars with the values for each biological replicate as points
+HB53ind_bar_plot = ggplot(HB53ind_data, aes(x = ind_line, y = mean_rel_conc, fill = treatment, group = treatment)) +
+                    geom_col(position ="dodge") +
+                    geom_point(aes(y = rel_conc), position = position_dodge(width = 0.9), alpha = 0.3) +
+                    scale_y_continuous("Relative mRNA levels") +
+                    scale_fill_manual("", values = c("Mock" = "gray", "Estradiol" = "#4472C4")) +
+                    scale_x_discrete("") +
+                    ggtitle("HB53 expression of estradiol-inducible lines") +
+                    theme_classic(base_size = 12)
+
+  
+  
+# One-way ANOVA
+HB53ind_data$ind_line = factor(HB53ind_data$ind_line)
+HB53ind_data$treatment = factor(HB53ind_data$treatment)
+
+aov(rel_conc ~ ind_line, data = HB53ind_data) %>% summary()
+aov(rel_conc ~ ind_line, data = HB53ind_data) %>% TukeyHSD
+```
+
+```{r}
+ggpubr::ggarrange(plotlist = list(HB21ind_bar_plot,
+                                  HB40ind_bar_plot,
+                                  HB53ind_bar_plot), ncol = 3) %>%
+  ggplot2::ggsave(., 
+                  filename = "./mRNA levels of HBind lines.png",
+                  dpi = 600,
+                  units = "cm",
+                  width = 40, height = 10)
+```
+
+
+
+# ABA treatment
+```{r}
+# Creating a function for plotting results
+plot_qPCR_ABA = function(data, title = NULL) {
+  
+  # Plot the mean values as bars with the values for each biological replicate as points
+  ggplot2::ggplot(data, aes(x = target_name, y = mean_rel_conc, fill = treatment, group = treatment)) +
+    geom_col(position ="dodge") +
+    geom_point(aes(y = rel_conc), position = position_dodge(width = 0.9), alpha = 0.3) +
+    scale_y_continuous("Relative mRNA levels") +
+    scale_fill_manual("", values = c("Mock" = "gray", "ABA" = "#4472C4")) +
+    scale_x_discrete("") +
+    ggtitle(title) +
+    theme_classic(base_size = 12)
+  
+}
+```
+
+
+## ABF3 expression under ABA treatment
+```{r}
+ABF3_data = cbind(target_name = rep("ABF3", 6), 
+                  treatment = (c(rep("ABA", 3), rep("Mock", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(4.121968081, 4.947386694, 2.109157259, 1.035264924, 0.935191248, 0.91806402))) %>% 
+  group_by(treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+ABF3_data$treatment = factor(ABF3_data$treatment, levels = c("Mock", "ABA"))
+
+plot_qPCR_ABA(ABF3_data, "ABF3 expression under ABA treatment")
+
+# One-way ANOVA
+ABF3_data$target_name = factor(ABF3_data$target_name)
+ABF3_data$treatment = factor(ABF3_data$treatment)
+
+aov(rel_conc ~ treatment, data = ABF3_data) %>% summary()
+aov(rel_conc ~ treatment, data = ABF3_data) %>% TukeyHSD
+```
+
+## ABI5 expression under ABA treatment
+```{r}
+ABI5_data = cbind(target_name = rep("ABI5", 6), 
+                  treatment = (c(rep("ABA", 3), rep("Mock", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(3.458148925, 2.02791896, 1.313424556, 0.604298528, 1.311908104, 0.616996125))) %>% 
+  group_by(treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+ABI5_data$treatment = factor(ABI5_data$treatment, levels = c("Mock", "ABA"))
+
+plot_qPCR_ABA(ABI5_data, "ABI5 expression under ABA treatment")
+
+# One-way ANOVA
+ABI5_data$target_name = factor(ABI5_data$target_name)
+ABI5_data$treatment = factor(ABI5_data$treatment)
+
+aov(rel_conc ~ treatment, data = ABI5_data) %>% summary()
+aov(rel_conc ~ treatment, data = ABI5_data) %>% TukeyHSD
+```
+
+```{r}
+AFP3_data = cbind(target_name = rep("AFP3", 6), 
+                  treatment = (c(rep("ABA", 3), rep("Mock", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(6.034914507, 8.037053395, 4.208579393, 1.104454001, 2.131201003, 1.316462719))) %>% 
+  group_by(treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+AFP3_data$rel_conc = AFP3_data$rel_conc/mean(AFP3_data[4:6,]$mean_rel_conc)
+AFP3_data$mean_rel_conc = AFP3_data$mean_rel_conc/mean(AFP3_data[4:6,]$mean_rel_conc)
+AFP3_data$treatment = factor(AFP3_data$treatment, levels = c("Mock", "ABA"))
+
+plot_qPCR_ABA(AFP3_data, "AFP3 expression under ABA treatment")
+
+# One-way ANOVA
+AFP3_data$target_name = factor(AFP3_data$target_name)
+AFP3_data$treatment = factor(AFP3_data$treatment)
+
+aov(rel_conc ~ treatment, data = AFP3_data) %>% summary()
+aov(rel_conc ~ treatment, data = AFP3_data) %>% TukeyHSD
+```
+
+```{r}
+GBF3_data = cbind(target_name = rep("GBF3", 6), 
+                  treatment = (c(rep("ABA", 3), rep("Mock", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(0.482968164, 0.586417475, 0.22272468, 0.153893052, 0.130609644, 0.177595467))) %>% 
+  group_by(treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+GBF3_data$rel_conc = GBF3_data$rel_conc/mean(GBF3_data[4:6,]$mean_rel_conc)
+GBF3_data$mean_rel_conc = GBF3_data$mean_rel_conc/mean(GBF3_data[4:6,]$mean_rel_conc)
+GBF3_data$treatment = factor(GBF3_data$treatment, levels = c("Mock", "ABA"))
+
+plot_qPCR_ABA(GBF3_data, "GBF3 expression under ABA treatment")
+
+# One-way ANOVA
+GBF3_data$target_name = factor(GBF3_data$target_name)
+GBF3_data$treatment = factor(GBF3_data$treatment)
+
+aov(rel_conc ~ treatment, data = GBF3_data) %>% summary()
+aov(rel_conc ~ treatment, data = GBF3_data) %>% TukeyHSD
+```
+
+
+
+```{r}
+NAP_data = cbind(target_name = rep("NAP", 6), 
+                  treatment = (c(rep("ABA", 3), rep("Mock", 3)))) %>% as_tibble() %>% 
+  mutate(rel_conc = as.double(c(0.141610486, 0.152125439, 0.120742041, 0.03154015, 0.024518253, 0.0494918))) %>% 
+  group_by(treatment) %>% mutate(mean_rel_conc = mean(rel_conc))
+NAP_data$rel_conc = NAP_data$rel_conc/mean(NAP_data[4:6,]$mean_rel_conc)
+NAP_data$mean_rel_conc = NAP_data$mean_rel_conc/mean(NAP_data[4:6,]$mean_rel_conc)
+NAP_data$treatment = factor(NAP_data$treatment, levels = c("Mock", "ABA"))
+
+plot_qPCR_ABA(NAP_data, "NAP expression under ABA treatment")
+
+# One-way ANOVA
+NAP_data$target_name = factor(NAP_data$target_name)
+NAP_data$treatment = factor(NAP_data$treatment)
+
+aov(rel_conc ~ treatment, data = NAP_data) %>% summary()
+aov(rel_conc ~ treatment, data = NAP_data) %>% TukeyHSD
+```
+
+
+```{r}
+ggpubr::ggarrange(plotlist = list(plot_qPCR_ABA(ABF3_data, "ABF3 expression under ABA treatment"),
+                                  plot_qPCR_ABA(AFP3_data, "AFP3 expression under ABA treatment"),
+                                  plot_qPCR_ABA(NAP_data, "NAP expression under ABA treatment")), ncol = 3) %>%
+  ggplot2::ggsave(., 
+                  filename = "./mRNA levels of ABA-sensitive genes.png",
+                  dpi = 600,
+                  units = "cm",
+                  width = 30, height = 10)
+```

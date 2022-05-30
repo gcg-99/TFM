@@ -1,0 +1,219 @@
+---
+title: "ChIP and DAP Quality Control"
+author: "Gema Castillo García"
+date: "12/05/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_knit$set(root.dir = 'C:/Users/Acerolo/Desktop/GitHub/TFM')
+#knitr::opts_knit$set(root.dir = 'C:/Users/gemac/Desktop/GitHub/TFM')
+knitr::opts_knit$set(root.dir = 'C:/Users/gemac/OneDrive - Fundación Universitaria San Pablo CEU/UPM/Máster/Semestre II/TFM/scripts GitHub')
+```
+
+```{r libraries, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(GenomeInfoDb)
+library(GenomicRanges)
+library(GenomicAlignments)
+library(normr)
+library(ChIPseeker)
+```
+
+```{r custom functions}
+# Loading custom functions
+invisible(sapply(list.files(path = "./R_scripts/functions/", 
+                            pattern = "\\.R$", ignore.case = TRUE, 
+                            full.names = TRUE), source, .GlobalEnv))
+```
+
+```{r ggplot theme parameters}
+# Setting global ggplot theme parameters
+theme_update(axis.text.x = element_text(color = "black"), 
+             axis.text.y = element_text(color = "black"),
+             axis.ticks = element_line(color = "black"),
+             panel.border = element_rect(color="black", fill = NA),
+             panel.grid.major = element_blank(), 
+             panel.grid.minor = element_blank(),
+             panel.background = element_blank(),
+             legend.background = element_blank(),
+             plot.background = element_rect(fill = "transparent", color = NA))
+```
+
+# Create a custom genome for enrichR
+```{r}
+# # Create a custom genome for enrichR
+# ath_nContigs = length(seqnames(Athaliana))
+# Athaliana_GRanges = GRanges(seqnames=seqnames(Athaliana),
+#                             ranges=IRanges(start=rep(1, ath_nContigs), end=seqlengths(Athaliana)),
+#                             strand=rep("*", ath_nContigs))
+# seqlevelsStyle(Athaliana_GRanges) = "Ensembl"
+# 
+# 
+# # Build a TxDb object
+# ath_txdb = makeTxDbFromGFF("./R_input/Arabidopsis_thaliana.TAIR10.52.gtf")
+# 
+# # Create a GRanges object with promoters regions
+# ath_promoters = getPromoters(TxDb=ath_txdb, upstream=3000, downstream=1000)
+
+
+# Create a custom genome for enrichR
+tair_chrs = getChromInfoFromNCBI('tair10') 
+tair_seqlengths = with(tair_chrs, setNames(SequenceLength, SequenceName))
+names(tair_seqlengths) = c("1", "2", "3", "4", "5", "Mt", "Pt")
+
+# Define 200 bp windows
+tilling_window = unlist(tileGenome(tair_seqlengths, tilewidth=200))
+```
+
+
+# ChIP Quality Control
+
+## ChIP enrichment calling
+```{r}
+ChIP2_enrich_results = enrichR_call(data_path = "./bash_output/ChIPseq_mapping/",
+                                   treatment = "ChIP2.sorted.bam",
+                                   control = "Input2.sorted.bam",
+                                   genome = tilling_window)
+  
+ChIP3_enrich_results = enrichR_call(data_path = "./bash_output/ChIPseq_mapping/",
+                                   treatment = "ChIP3.sorted.bam",
+                                   control = "Input3.sorted.bam",
+                                   genome = tilling_window)
+
+ChIP7_enrich_results = enrichR_call(data_path = "./bash_output/ChIPseq_mapping/",
+                                   treatment = "ChIP7.sorted.bam",
+                                   control = "Input7.sorted.bam",
+                                   genome = tilling_window)
+
+
+# write peaks location into a bed file
+ChIP2_enrich_results$fit_peaks %>% plyranges::write_bed(., file = "./R_output/chipseq_analysis/ChIP2_enrichR_q0.05.bed")
+ChIP3_enrich_results$fit_peaks %>% plyranges::write_bed(., file = "./R_output/chipseq_analysis/ChIP3_enrichR_q0.05.bed")
+ChIP7_enrich_results$fit_peaks %>% plyranges::write_bed(., file = "./R_output/chipseq_analysis/ChIP7_enrichR_q0.05.bed")
+```
+
+### Plot percentage of reads in ChIP called peaks
+```{r}
+png("./R_output/chipseq_analysis/plots/reads_percentage_plot_enrichR.png", width = 40, height = 15, units = "cm", res = 800)
+chip_per_enrich_plot = ggarrange(plotlist = list(ChIP2_enrich_results$reads_plot, 
+                                                 ChIP3_enrich_results$reads_plot, 
+                                                 ChIP7_enrich_results$reads_plot), 
+                                 ncol = 3, common.legend = TRUE)
+
+annotate_figure(chip_per_enrich_plot, 
+                top = text_grob("Percentage of ChIP reads within 200 bp tilling windows", 
+                                color = "black", face = "bold", size = 14))
+dev.off()
+```
+
+
+## Plot ChIP vs Input signal in terms of CPM
+```{r}
+ChIP2_CPM_results = count_cpm(data_path = "./bash_output/ChIPseq_mapping/",
+                              treatment = "ChIP2.sorted.bam",
+                              control = "Input2.sorted.bam",
+                              tilling_window = tilling_window,
+                              fit_peaks = ChIP2_enrich_results$fit_peaks)
+
+ChIP3_CPM_results = count_cpm(data_path = "./bash_output/ChIPseq_mapping/",
+                              treatment = "ChIP3.sorted.bam",
+                              control = "Input3.sorted.bam",
+                              tilling_window = tilling_window,
+                              fit_peaks = ChIP3_enrich_results$fit_peaks)
+
+ChIP7_CPM_results = count_cpm(data_path = "./bash_output/ChIPseq_mapping/",
+                              treatment = "ChIP7.sorted.bam",
+                              control = "Input7.sorted.bam",
+                              tilling_window = tilling_window,
+                              fit_peaks = ChIP7_enrich_results$fit_peaks)
+  
+
+
+png("./R_output/chipseq_analysis/plots/ChIPvsInput_CPM_plot_enrichR.png", width = 40, height = 15, units = "cm", res = 800)
+chip_cpm_plot = ggarrange(plotlist = list(ChIP2_CPM_results$CPM_plot, 
+                                          ChIP3_CPM_results$CPM_plot, 
+                                          ChIP7_CPM_results$CPM_plot), 
+                          ncol = 3, common.legend = TRUE)
+annotate_figure(chip_cpm_plot, top = text_grob("CPM counts within 200 bp tilling windows",
+               color = "black", face = "bold", size = 14))
+dev.off()
+```
+Regions above the diagonal show higher enrichment in the ChIP samples, while the regions below the diagonal show higher enrichment in the Input samples.
+
+
+# DAP Quality Control
+
+## DAP enrichment calling
+```{r}
+DAP_HB21_enrich_results = enrichR_call(data_path = "./bash_output/DAPseq_mapping/",
+                                      treatment = "DAP_ATHB21.sorted.bam",
+                                      control = "DAP_control.sorted.bam",
+                                      genome = tilling_window)
+  
+DAP_HB40_enrich_results = enrichR_call(data_path = "./bash_output/DAPseq_mapping/",
+                                      treatment = "DAP_ATHB40.sorted.bam",
+                                      control = "DAP_control.sorted.bam",
+                                      genome = tilling_window)
+
+DAP_HB53_enrich_results = enrichR_call(data_path = "./bash_output/DAPseq_mapping/",
+                                      treatment = "DAP_ATHB53.sorted.bam",
+                                      control = "DAP_control.sorted.bam",
+                                      genome = tilling_window)
+
+
+# write peaks location into a bed file
+DAP_HB21_enrich_results$fit_peaks %>% plyranges::write_bed(., file = "./R_output/dapseq_analysis/HB21_enrichR_q0.05.bed")
+DAP_HB40_enrich_results$fit_peaks %>% plyranges::write_bed(., file = "./R_output/dapseq_analysis/HB40_enrichR_q0.05.bed")
+DAP_HB53_enrich_results$fit_peaks %>% plyranges::write_bed(., file = "./R_output/dapseq_analysis/HB53_enrichR_q0.05.bed")
+```
+
+### Plot percentage of reads in DAP called peaks
+```{r}
+png("./R_output/dapseq_analysis/plots/reads_percentage_plot_enrichR.png", width = 40, height = 15, units = "cm", res = 800)
+dap_per_enrich_plot = ggarrange(plotlist = list(DAP_HB21_enrich_results$reads_plot, 
+                                                DAP_HB40_enrich_results$reads_plot,
+                                                DAP_HB53_enrich_results$reads_plot), 
+                                ncol = 3, common.legend = TRUE)
+
+annotate_figure(dap_per_enrich_plot, 
+                top = text_grob("Percentage of DAP reads within 200 bp tilling windows", 
+                                color = "black", face = "bold", size = 14))
+dev.off()
+```
+
+
+## Plot DAP vs Input signal in terms of CPM
+```{r}
+HB21_CPM_results = count_cpm(data_path = "./bash_output/DAPseq_mapping/",
+                             treatment = "DAP_ATHB21.sorted.bam",
+                             control = "DAP_control.sorted.bam",
+                             tilling_window = tilling_window,
+                             fit_peaks = DAP_HB21_enrich_results$fit_peaks)
+
+HB40_CPM_results = count_cpm(data_path = "./bash_output/DAPseq_mapping/",
+                             treatment = "DAP_ATHB40.sorted.bam",
+                             control = "DAP_control.sorted.bam",
+                             tilling_window = tilling_window,
+                             fit_peaks = DAP_HB40_enrich_results$fit_peaks)
+
+HB53_CPM_results = count_cpm(data_path = "./bash_output/DAPseq_mapping/",
+                             treatment = "DAP_ATHB53.sorted.bam",
+                             control = "DAP_control.sorted.bam",
+                             tilling_window = tilling_window,
+                             fit_peaks = DAP_HB53_enrich_results$fit_peaks)
+  
+
+
+png("./R_output/dapseq_analysis/plots/DAPvsInput_CPM_plot_enrichR.png", width = 40, height = 15, units = "cm", res = 800)
+dap_cpm_plot = ggarrange(plotlist = list(HB21_CPM_results$CPM_plot, 
+                                         HB40_CPM_results$CPM_plot, 
+                                         HB53_CPM_results$CPM_plot),
+                         ncol = 3, common.legend = TRUE)
+annotate_figure(dap_cpm_plot, top = text_grob("CPM counts within 200 bp tilling windows",
+                                              color = "black", face = "bold", size = 14))
+dev.off()
+```

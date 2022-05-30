@@ -1,0 +1,124 @@
+---
+title: "Enrichment analysis"
+author: "Gema Castillo García"
+date: "20/05/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_knit$set(root.dir = 'C:/Users/Acerolo/Desktop/GitHub/TFM')
+knitr::opts_knit$set(root.dir = 'C:/Users/gemac/OneDrive - Fundación Universitaria San Pablo CEU/UPM/Máster/Semestre II/TFM/scripts GitHub')
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+library(clusterProfiler)
+library(org.At.tair.db)
+library(biomartr) #
+library(enrichplot)
+library(ggplot2)
+library(pathview)
+
+keytypes(org.At.tair.db) #checking ID types supported by org.At.tair.db (TAIR is accepted)
+```
+
+A gene set is an unordered collection of genes that are functionally related.
+
+
+# Gene Ontology (GO)
+
+GO comprises three ontologies: molecular function (MF), biological process (BP), and cellular component (CC). In this case, I am interested on the second one (pathways and larger processes made up of the activities of multiple gene products).
+
+
+
+# HB21ind DE genes #
+
+
+### GO over-representation analysis of common DE genes in HBs
+```{r}
+# Test which biological processes (BP) are over-represented in common down DE genes in HBs
+
+DE_DN_HBs_enrichedGO_Infmax = enrichGO(gene         = common_DOWN_genes,
+                                      OrgDb         = org.At.tair.db,
+                                      keyType       = "TAIR",
+                                      ont           = "BP",
+                                      minGSSize     = 10,
+                                      maxGSSize     = Inf,
+                                      pAdjustMethod = "BH",
+                                      pvalueCutoff  = 0.05,
+                                      qvalueCutoff  = 1,
+                                      readable      = TRUE) #%>% simplify()
+
+# Save filtered GO terms in a table
+DE_DN_HBs_enrichedGO_Infmax@result %>% filter(p.adjust<0.05) %>% write.table(.,
+            file = "./R_output/GO_terms_enrichment_analysis/common_HBs_DOWN_DE_list_GO_terms.txt",
+            row.names = F, sep = "\t", quote = F, na = "")
+
+
+
+
+# Test which biological processes (BP) are over-represented in common up DE genes in HBs
+DE_UP_HBs_enrichedGO_Infmax = enrichGO(gene         = common_UP_genes,
+                                      OrgDb         = org.At.tair.db,
+                                      keyType       = "TAIR",
+                                      ont           = "BP",
+                                      minGSSize     = 10,
+                                      maxGSSize     = Inf,
+                                      pAdjustMethod = "BH",
+                                      pvalueCutoff  = 0.05,
+                                      qvalueCutoff  = 1,
+                                      readable      = TRUE) #%>% simplify()
+
+# Save filtered GO terms in a table
+DE_UP_HBs_enrichedGO_Infmax@result %>% filter(p.adjust<0.05) %>% write.table(.,
+            file = "./R_output/GO_terms_enrichment_analysis/common_HBs_UP_DE_list_GO_terms.txt",
+            row.names = F, sep = "\t", quote = F, na = "")
+```
+
+
+
+### GO over-representation analysis of common UP DTs of HBs
+```{r}
+# Test which biological processes (BP) are over-represented in common down DE genes in HBs
+
+UP_DT_HBs_enrichedGO_Infmax = enrichGO(gene         = common_UP_DT_HBs,
+                                      OrgDb         = org.At.tair.db,
+                                      keyType       = "TAIR",
+                                      ont           = "BP",
+                                      minGSSize     = 10,
+                                      maxGSSize     = Inf,
+                                      pAdjustMethod = "BH",
+                                      pvalueCutoff  = 0.05,
+                                      qvalueCutoff  = 1,
+                                      readable      = TRUE) #%>% simplify()
+
+# Save filtered GO terms in a table
+UP_DT_HBs_enrichedGO_Infmax@result %>% filter(p.adjust<0.05) %>% write.table(.,
+            file = "./R_output/GO_terms_enrichment_analysis/HBs_common_UP_DT_list_GO_terms.txt",
+            row.names = F, sep = "\t", quote = F, na = "")
+
+```
+
+
+
+### GO over-representation analysis of common BF DT of HBs
+```{r}
+# Test which biological processes (BP) are over-represented in common down DE genes in HBs
+
+BF_DT_HBs_enrichedGO_Infmax = enrichGO(gene         = HBs_BF_DT$Geneid,
+                                      OrgDb         = org.At.tair.db,
+                                      keyType       = "TAIR",
+                                      ont           = "BP",
+                                      minGSSize     = 10,
+                                      maxGSSize     = Inf,
+                                      pAdjustMethod = "BH",
+                                      pvalueCutoff  = 0.05,
+                                      qvalueCutoff  = 1,
+                                      readable      = TRUE) #%>% simplify()
+
+# Save filtered GO terms in a table
+BF_DT_HBs_enrichedGO_Infmax@result %>% filter(p.adjust<0.05) %>% write.table(.,
+            file = "./R_output/GO_terms_enrichment_analysis/HBs_BF_DT_list_GO_terms.txt",
+            row.names = F, sep = "\t", quote = F, na = "")
+
+```

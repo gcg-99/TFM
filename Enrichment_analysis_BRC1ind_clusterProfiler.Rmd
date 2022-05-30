@@ -1,0 +1,387 @@
+---
+title: "Enrichment analysis"
+author: "Gema Castillo García"
+date: "20/05/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#knitr::opts_knit$set(root.dir = 'C:/Users/Acerolo/Desktop/GitHub/TFM')
+knitr::opts_knit$set(root.dir = 'C:/Users/gemac/OneDrive - Fundación Universitaria San Pablo CEU/UPM/Máster/Semestre II/TFM/scripts GitHub')
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+library(clusterProfiler)
+library(org.At.tair.db)
+library(biomartr) #
+library(enrichplot)
+library(ggplot2)
+library(pathview)
+
+keytypes(org.At.tair.db) #checking ID types supported by org.At.tair.db (TAIR is accepted)
+```
+
+A gene set is an unordered collection of genes that are functionally related.
+
+
+# Gene Ontology (GO)
+
+GO comprises three ontologies: molecular function (MF), biological process (BP), and cellular component (CC). In this case, I am interested on the second one (pathways and larger processes made up of the activities of multiple gene products).
+
+
+
+# GFP:BRC1ind DE genes #
+
+Some of the following functions require a ranked gene list, which contains three features:
+
+    numeric vector: fold change (FC) or other type of numerical variable
+    named vector: every FC has the corresponding gene ID
+    sorted vector: FCs should be sorted in decreasing order
+```{r}
+row.names(BRC1_DE_list) = BRC1_DE_list$Geneid
+
+#Creating a geneList with -log10(FC) values of genes with FDR < 0.05
+  ## feature 1: numeric vector
+  BRC1_DE_geneList_FC = BRC1_DE_list$logFC_GFP_BRC1ind_vs_brc1
+  
+  ## feature 2: named vector
+  names(BRC1_DE_geneList_FC) = as.character(row.names(BRC1_DE_list))
+  
+  ## feature 3: sorted vector
+  BRC1_DE_geneList_FC = sort(BRC1_DE_geneList_FC, decreasing = TRUE)
+```
+
+### GO over-representation analysis of DE genes in BRC1ind
+```{r}
+# Test which biological processes (BP) are over-represented in BF DT of BRC1
+
+DE_BRC1_enrichedGO_250max = enrichGO(gene          = row.names(BRC1_DE_list),
+                                     OrgDb         = org.At.tair.db,
+                                     keyType       = "TAIR",
+                                     ont           = "BP",
+                                     minGSSize     = 10,
+                                     maxGSSize     = 250,
+                                     pAdjustMethod = "BH",
+                                     pvalueCutoff  = 0.05,
+                                     qvalueCutoff  = 1,
+                                     readable      = TRUE) #%>% simplify()
+
+DE_BRC1_enrichedGO_500max = enrichGO(gene          = row.names(BRC1_DE_list),
+                                     OrgDb         = org.At.tair.db,
+                                     keyType       = "TAIR",
+                                     ont           = "BP",
+                                     minGSSize     = 10,
+                                     maxGSSize     = 500,
+                                     pAdjustMethod = "BH",
+                                     pvalueCutoff  = 0.05,
+                                     qvalueCutoff  = 1,
+                                     readable      = TRUE) #%>% simplify()
+
+DE_BRC1_enrichedGO_1000max = enrichGO(gene          = row.names(BRC1_DE_list),
+                                      OrgDb         = org.At.tair.db,
+                                      keyType       = "TAIR",
+                                      ont           = "BP",
+                                      minGSSize     = 10,
+                                      maxGSSize     = 1000,
+                                      pAdjustMethod = "BH",
+                                      pvalueCutoff  = 0.05,
+                                      qvalueCutoff  = 1,
+                                      readable      = TRUE) #%>% simplify()
+
+# # Save filtered GO terms in a table
+# DE_BRC1_enrichedGO_1000max@result %>% filter(p.adjust<0.05) %>% write.table(.,
+#             file = "./R_output/GO_terms_enrichment_analysis/BRC1_DE_list_GO_terms.txt",
+#             row.names = F, sep = "\t", quote = F, na = "")
+```
+
+### Visualization of enriched GO terms
+```{r}
+#goplot(BF_DT_BRC1_enrichedGO) # directed acyclic graph
+DE_BRC1_cnetplot_250maxGSS = cnetplot(DE_BRC1_enrichedGO_250max, categorySize="p.adjust",
+                                   foldChange=BRC1_DE_geneList_FC) # category netplot with FC values
+DE_BRC1_cnetplot_500maxGSS = cnetplot(DE_BRC1_enrichedGO_500max, categorySize="p.adjust",
+                                   foldChange=BRC1_DE_geneList_FC) # category netplot with FC values
+DE_BRC1_cnetplot_1000maxGSS = cnetplot(DE_BRC1_enrichedGO_1000max, categorySize="p.adjust", 
+                                    foldChange=BRC1_DE_geneList_FC) # category netplot with FC values
+
+# Saving Gene-Concept Networks
+png("./R_output/GO_terms_enrichment_analysis/BRC1ind_DE_Gene-Concept_Net_250maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+DE_BRC1_cnetplot_250maxGSS
+dev.off()
+
+png("./R_output/GO_terms_enrichment_analysis/BRC1ind_DE_Gene-Concept_Net_500maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+DE_BRC1_cnetplot_500maxGSS
+dev.off()
+
+png("./R_output/GO_terms_enrichment_analysis/BRC1ind_DE_Gene-Concept_Net_1000maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+DE_BRC1_cnetplot_1000maxGSS
+dev.off()
+```
+
+
+
+# GFP:BRC1ind UP DE genes #
+```{r}
+BRC1_UP_DE_list = BRC1_DE_list %>% filter(logFC_GFP_BRC1ind_vs_brc1>1)
+
+#Creating a geneList with -log10(FC) values of genes with FDR < 0.05
+  ## feature 1: numeric vector
+  BRC1_UP_DE_geneList_FC = BRC1_UP_DE_list$logFC_GFP_BRC1ind_vs_brc1
+  
+  ## feature 2: named vector
+  names(BRC1_UP_DE_geneList_FC) = as.character(row.names(BRC1_UP_DE_list))
+  
+  ## feature 3: sorted vector
+  BRC1_UP_DE_geneList_FC = sort(BRC1_UP_DE_geneList_FC, decreasing = TRUE)
+```
+
+### GO over-representation analysis of UP genes in BRC1ind
+```{r}
+# Test which biological processes are over-represented in BF DT of BRC1
+
+UP_DE_BRC1_enrichedGO_250max =  enrichGO(gene          = row.names(BRC1_UP_DE_list),
+                                         OrgDb         = org.At.tair.db,
+                                         keyType       = "TAIR",
+                                         ont           = "BP",
+                                         minGSSize     = 10,
+                                         maxGSSize     = 250,
+                                         pAdjustMethod = "BH",
+                                         pvalueCutoff  = 0.05,
+                                         qvalueCutoff  = 1,
+                                         readable      = TRUE) #%>% simplify()
+
+UP_DE_BRC1_enrichedGO_500max =  enrichGO(gene          = row.names(BRC1_UP_DE_list),
+                                         OrgDb         = org.At.tair.db,
+                                         keyType       = "TAIR",
+                                         ont           = "BP",
+                                         minGSSize     = 10,
+                                         maxGSSize     = 500,
+                                         pAdjustMethod = "BH",
+                                         pvalueCutoff  = 0.05,
+                                         qvalueCutoff  = 1,
+                                         readable      = TRUE) #%>% simplify()
+
+UP_DE_BRC1_enrichedGO_1000max = enrichGO(gene          = row.names(BRC1_UP_DE_list),
+                                         OrgDb         = org.At.tair.db,
+                                         keyType       = "TAIR",
+                                         ont           = "BP",
+                                         minGSSize     = 10,
+                                         maxGSSize     = 1000,
+                                         pAdjustMethod = "BH",
+                                         pvalueCutoff  = 0.05,
+                                         qvalueCutoff  = 1,
+                                         readable      = TRUE) #%>% simplify()
+
+UP_DE_BRC1_enrichedGO_Infmax = enrichGO(gene          = row.names(BRC1_UP_DE_list),
+                                         OrgDb         = org.At.tair.db,
+                                         keyType       = "TAIR",
+                                         ont           = "BP",
+                                         minGSSize     = 10,
+                                         maxGSSize     = Inf,
+                                         pAdjustMethod = "BH",
+                                         pvalueCutoff  = 0.05,
+                                         qvalueCutoff  = 1,
+                                         readable      = TRUE) #%>% simplify()
+
+# Save filtered GO terms in a table
+UP_DE_BRC1_enrichedGO_Infmax@result %>% filter(p.adjust<0.05) %>% write.table(.,
+            file = "./R_output/GO_terms_enrichment_analysis/BRC1_UP_DE_list_GO_terms_InfmaxGSS.txt",
+            row.names = F, sep = "\t", quote = F, na = "")
+```
+
+### Visualization of enriched GO terms
+```{r}
+#goplot(BF_DT_BRC1_enrichedGO) # directed acyclic graph
+UP_DE_BRC1_cnetplot_250maxGSS = cnetplot(UP_DE_BRC1_enrichedGO_250max, categorySize="p.adjust",
+                                   foldChange=BRC1_UP_DE_geneList_FC) # category netplot with FC values
+UP_DE_BRC1_cnetplot_500maxGSS = cnetplot(UP_DE_BRC1_enrichedGO_500max, categorySize="p.adjust",
+                                   foldChange=BRC1_UP_DE_geneList_FC) # category netplot with FC values
+UP_DE_BRC1_cnetplot_1000maxGSS = cnetplot(UP_DE_BRC1_enrichedGO_1000max, categorySize="p.adjust", 
+                                    foldChange=BRC1_UP_DE_geneList_FC) # category netplot with FC values
+
+# Saving Gene-Concept Networks
+png("./R_output/GO_terms_enrichment_analysis/BRC1ind_UP_DE_Gene-Concept_Net_250maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+UP_DE_BRC1_cnetplot_250maxGSS
+dev.off()
+
+png("./R_output/GO_terms_enrichment_analysis/BRC1ind_UP_DE_Gene-Concept_Net_500maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+UP_DE_BRC1_cnetplot_500maxGSS
+dev.off()
+
+png("./R_output/GO_terms_enrichment_analysis/BRC1ind_UP_DE_Gene-Concept_Net_1000maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+UP_DE_BRC1_cnetplot_1000maxGSS
+dev.off()
+```
+
+
+# GFP:BRC1ind DN DE genes #
+```{r}
+BRC1_DN_DE_list = BRC1_DE_list %>% filter(logFC_GFP_BRC1ind_vs_brc1<1)
+
+#Creating a geneList with -log10(FC) values of genes with FDR < 0.05
+  ## feature 1: numeric vector
+  BRC1_DN_DE_geneList_FC = BRC1_DN_DE_list$logFC_GFP_BRC1ind_vs_brc1
+  
+  ## feature 2: named vector
+  names(BRC1_DN_DE_geneList_FC) = as.character(row.names(BRC1_DN_DE_list))
+  
+  ## feature 3: sorted vector
+  BRC1_DN_DE_geneList_FC = sort(BRC1_DN_DE_geneList_FC, decreasing = TRUE)
+```
+
+### GO over-representation analysis of DN genes in BRC1ind
+```{r}
+# Test which biological processes are over-represented in BF DT of BRC1
+
+DN_DE_BRC1_enrichedGO_250max =  enrichGO(gene          = row.names(BRC1_DN_DE_list),
+                                         OrgDb         = org.At.tair.db,
+                                         keyType       = "TAIR",
+                                         ont           = "BP",
+                                         minGSSize     = 10,
+                                         maxGSSize     = 250,
+                                         pAdjustMethod = "BH",
+                                         pvalueCutoff  = 0.05,
+                                         qvalueCutoff  = 1,
+                                         readable      = TRUE) #%>% simplify()
+
+DN_DE_BRC1_enrichedGO_500max =  enrichGO(gene          = row.names(BRC1_DN_DE_list),
+                                         OrgDb         = org.At.tair.db,
+                                         keyType       = "TAIR",
+                                         ont           = "BP",
+                                         minGSSize     = 10,
+                                         maxGSSize     = 500,
+                                         pAdjustMethod = "BH",
+                                         pvalueCutoff  = 0.05,
+                                         qvalueCutoff  = 1,
+                                         readable      = TRUE) #%>% simplify()
+
+DN_DE_BRC1_enrichedGO_1000max = enrichGO(gene          = row.names(BRC1_DN_DE_list),
+                                         OrgDb         = org.At.tair.db,
+                                         keyType       = "TAIR",
+                                         ont           = "BP",
+                                         minGSSize     = 10,
+                                         maxGSSize     = 1000,
+                                         pAdjustMethod = "BH",
+                                         pvalueCutoff  = 0.05,
+                                         qvalueCutoff  = 1,
+                                         readable      = TRUE) #%>% simplify()
+
+DN_DE_BRC1_enrichedGO_Infmax = enrichGO(gene          = row.names(BRC1_DN_DE_list),
+                                         OrgDb         = org.At.tair.db,
+                                         keyType       = "TAIR",
+                                         ont           = "BP",
+                                         minGSSize     = 10,
+                                         maxGSSize     = Inf,
+                                         pAdjustMethod = "BH",
+                                         pvalueCutoff  = 0.05,
+                                         qvalueCutoff  = 1,
+                                         readable      = TRUE) #%>% simplify()
+
+# Save filtered GO terms in a table
+DN_DE_BRC1_enrichedGO_Infmax@result %>% filter(p.adjust<0.05) %>% write.table(.,
+            file = "./R_output/GO_terms_enrichment_analysis/BRC1_DN_DE_list_GO_terms_InfmaxGSS.txt",
+            row.names = F, sep = "\t", quote = F, na = "")
+```
+
+### Visualization of enriched GO terms
+```{r}
+#goplot(BF_DT_BRC1_enrichedGO) # directed acyclic graph
+DN_DE_BRC1_cnetplot_250maxGSS = cnetplot(DN_DE_BRC1_enrichedGO_250max, categorySize="p.adjust",
+                                   foldChange=BRC1_DN_DE_geneList_FC) # category netplot with FC values
+DN_DE_BRC1_cnetplot_500maxGSS = cnetplot(DN_DE_BRC1_enrichedGO_500max, categorySize="p.adjust",
+                                   foldChange=BRC1_DN_DE_geneList_FC) # category netplot with FC values
+DN_DE_BRC1_cnetplot_1000maxGSS = cnetplot(DN_DE_BRC1_enrichedGO_1000max, categorySize="p.adjust", 
+                                    foldChange=BRC1_DN_DE_geneList_FC) # category netplot with FC values
+
+# Saving Gene-Concept Networks
+png("./R_output/GO_terms_enrichment_analysis/BRC1ind_DN_DE_Gene-Concept_Net_250maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+DN_DE_BRC1_cnetplot_250maxGSS
+dev.off()
+
+png("./R_output/GO_terms_enrichment_analysis/BRC1ind_DN_DE_Gene-Concept_Net_500maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+DN_DE_BRC1_cnetplot_500maxGSS
+dev.off()
+
+png("./R_output/GO_terms_enrichment_analysis/BRC1ind_DN_DE_Gene-Concept_Net_1000maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+DN_DE_BRC1_cnetplot_1000maxGSS
+dev.off()
+```
+
+
+
+# BRC1 BF DT #
+```{r}
+row.names(BRC1_BF_DT) = BRC1_BF_DT$Geneid
+
+#Creating a geneList with -log10(FC) values of genes with FDR < 0.05
+  ## feature 1: numeric vector
+  BRC1_BF_DT_geneList_FC = BRC1_BF_DT$logFC_GFP_BRC1ind_vs_brc1
+  
+  ## feature 2: named vector
+  names(BRC1_BF_DT_geneList_FC) = as.character(row.names(BRC1_BF_DT))
+  
+  ## feature 3: sorted vector
+  BRC1_BF_DT_geneList_FC = sort(BRC1_BF_DT_geneList_FC, decreasing = TRUE)
+```
+
+### GO over-representation analysis of BF DT of BRC1
+```{r}
+# Test which biological processes are over-represented in BF DT of BRC1
+
+BF_DT_BRC1_enrichedGO_500max = enrichGO(gene          = row.names(BRC1_BF_DT),
+                                         OrgDb         = org.At.tair.db,
+                                         keyType       = "TAIR",
+                                         ont           = "BP",
+                                         minGSSize     = 10,
+                                         maxGSSize     = 500,
+                                         pAdjustMethod = "BH",
+                                         pvalueCutoff  = 0.05,
+                                         qvalueCutoff  = 1,
+                                         readable      = TRUE) #%>% simplify()
+
+BF_DT_BRC1_enrichedGO_1000max = enrichGO(gene          = row.names(BRC1_BF_DT),
+                                         OrgDb         = org.At.tair.db,
+                                         keyType       = "TAIR",
+                                         ont           = "BP",
+                                         minGSSize     = 10,
+                                         maxGSSize     = 1000,
+                                         pAdjustMethod = "BH",
+                                         pvalueCutoff  = 0.05,
+                                         qvalueCutoff  = 1,
+                                         readable      = TRUE) #%>% simplify()
+
+BF_DT_BRC1_enrichedGO_Infmax = enrichGO(gene          = row.names(BRC1_BF_DT),
+                                         OrgDb         = org.At.tair.db,
+                                         keyType       = "TAIR",
+                                         ont           = "BP",
+                                         minGSSize     = 10,
+                                         maxGSSize     = Inf,
+                                         pAdjustMethod = "BH",
+                                         pvalueCutoff  = 0.05,
+                                         qvalueCutoff  = 1,
+                                         readable      = TRUE) #%>% simplify()
+
+# Save filtered GO terms in a table
+BF_DT_BRC1_enrichedGO_Infmax@result %>% filter(p.adjust<0.05) %>% write.table(.,
+            file = "./R_output/GO_terms_enrichment_analysis/BRC1_BF_DT_GO_terms_InfmaxGSS.txt",
+            row.names = F, sep = "\t", quote = F, na = "")
+```
+
+### Visualization of enriched GO terms
+```{r}
+#goplot(BF_DT_BRC1_enrichedGO) # directed acyclic graph
+BRC1_cnetplot_500maxGSS = cnetplot(BF_DT_BRC1_enrichedGO_500max, categorySize="p.adjust",
+                                   foldChange=BRC1_BF_DT_geneList_FC) # category netplot with FC values
+BRC1_cnetplot_1000maxGSS = cnetplot(BF_DT_BRC1_enrichedGO_1000max, categorySize="p.adjust", 
+                                    foldChange=BRC1_BF_DT_geneList_FC) # category netplot with FC values
+
+# Saving Gene-Concept Networks
+png("./R_output/GO_terms_enrichment_analysis/BRC1ind_BF_DT_Gene-Concept_Net_500maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+BRC1_cnetplot_500maxGSS
+dev.off()
+
+png("./R_output/GO_terms_enrichment_analysis/BRC1ind_BF_DT_Gene-Concept_Net_1000maxGSS.png", width = 30, height = 20, units = "cm", res = 300)
+BRC1_cnetplot_1000maxGSS
+dev.off()
+```
