@@ -20,4 +20,7 @@ Here we combine existing and new transcriptomic and protein-DNA binding data to 
 **qRT-PCR_analysis.Rmd** contains the code used for the statistical analysis of qRT-PCR data.
 
 
+
+
+
 **For confidentiality reasons, the files generated in these analyses are not available in this repository.**
