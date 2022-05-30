@@ -1,4 +1,4 @@
-# Master's thesis of Master in Computational Biology - Analysis of the transcriptional network regulated by the TCP transcription factor BRANCHED1
+# Analysis of the transcriptional network regulated by the TCP transcription factor BRANCHED1
 
 This Master's thesis is part of the project **'CENTRAL INTEGRATORS OF STIMULI CONTROLLING BRANCHING: BRC1-SMXL INTERACTIONS'**.
 
